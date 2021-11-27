@@ -19,11 +19,11 @@
     let
       pkgs = import nixpkgs {
         config = {};
-        system = "x86_64-darwin";
+        system = "aarch64-darwin";
       };
     in
       with pkgs; {
-        packages.x86_64-darwin = pkgs.extend self.overlay;
+        packages.aarch64-darwin = pkgs.extend self.overlay;
 
         overlay = final: prev: {
           emacs-vterm = stdenv.mkDerivation rec {
@@ -64,14 +64,16 @@
 
           emacs = (emacs.override { srcRepo = true; nativeComp = true; withXwidgets = true; }).overrideAttrs (
             o: rec {
-version = "29.0.50";
+              version = "29.0.50";
               src = emacs-src;
 
               buildInputs = o.buildInputs ++ [ darwin.apple_sdk.frameworks.WebKit ];
 
               patches = [
                 ./patches/fix-window-role.patch
-                ./patches/no-titlebar.patch
+                #./patches/no-titlebar.patch
+                ./patches/system-appearance.patch
+                ./patches/no-frame-refocus-cocoa.patch
               ];
 
               postPatch = o.postPatch + ''
@@ -80,8 +82,10 @@ version = "29.0.50";
               '';
 
               postInstall = o.postInstall + ''
-                cp ${self.packages.x86_64-darwin.emacs-vterm}/vterm.el $out/share/emacs/site-lisp/vterm.el
-                cp ${self.packages.x86_64-darwin.emacs-vterm}/vterm-module.so $out/share/emacs/site-lisp/vterm-module.so
+                cp ${self.packages.aarch64-darwin.emacs-vterm}/vterm.el $out/share/emacs/site-lisp/vterm.el
+                cp ${self.packages.aarch64-darwin.emacs-vterm}/vterm-module.so $out/share/emacs/site-lisp/vterm-module.so
+                rm $out/Applications/Emacs.app/Contents/Resources/Emacs.icns
+                cp ${./icons/nobu417-big-sur.icns} $out/Applications/Emacs.app/Contents/Resources/Emacs.icns
               '';
 
               CFLAGS = "-DMAC_OS_X_VERSION_MAX_ALLOWED=110203 -g -O2";
